@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Lista de Tareas</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 30px; }
+    .container { max-width: 600px; margin: auto; }
+    h1 { text-align: center; color: #333; margin-bottom: 20px; }
+    .form-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 10px; }
+    input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+    button { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; }
+    .btn-add { background: #4CAF50; color: white; }
+    .tarea { background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+    .tarea.completada .titulo { text-decoration: line-through; color: #aaa; }
+    .titulo { flex: 1; font-size: 16px; }
+    .btn-check { background: #2196F3; color: white; }
+    .btn-edit { background: #FF9800; color: white; }
+    .btn-del { background: #f44336; color: white; }
+    .btn-check, .btn-edit, .btn-del { padding: 7px 12px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Lista de Tareas</h1>
+    <div class="form-box">
+      <input id="inputTarea" type="text" placeholder="Escribe una nueva tarea..." />
+      <button class="btn-add" onclick="crearTarea()">Agregar</button>
+    </div>
+    <div id="listaTareas"></div>
+  </div>
+
+  <script>
+    const API = '/api/tareas';
+
+    async function cargarTareas() {
+      const res = await fetch(API);
+      const tareas = await res.json();
+      const lista = document.getElementById('listaTareas');
+      lista.innerHTML = '';
+      tareas.forEach(t => {
+        lista.innerHTML += `
+          <div class="tarea ${t.completada ? 'completada' : ''}">
+            <span class="titulo">${t.titulo}</span>
+            <button class="btn-check" onclick="toggleTarea('${t._id}', ${!t.completada})">
+              ${t.completada ? '↩️' : '✔️'}
+            </button>
+            <button class="btn-edit" onclick="editarTarea('${t._id}', '${t.titulo}')">✏️</button>
+            <button class="btn-del" onclick="eliminarTarea('${t._id}')">🗑️</button>
+          </div>`;
+      });
+    }
+
+    async function crearTarea() {
+      const input = document.getElementById('inputTarea');
+      if (!input.value.trim()) return alert('Escribe una tarea');
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo: input.value })
+      });
+      input.value = '';
+      cargarTareas();
+    }
+
+    async function toggleTarea(id, completada) {
+      await fetch(`${API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completada })
+      });
+      cargarTareas();
+    }
+
+    async function editarTarea(id, tituloActual) {
+      const nuevo = prompt('Editar tarea:', tituloActual);
+      if (!nuevo || nuevo === tituloActual) return;
+      await fetch(`${API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo: nuevo })
+      });
+      cargarTareas();
+    }
+
+    async function eliminarTarea(id) {
+      if (!confirm('¿Eliminar esta tarea?')) return;
+      await fetch(`${API}/${id}`, { method: 'DELETE' });
+      cargarTareas();
+    }
+
+    cargarTareas();
+  </script>
+</body>
+</html>
