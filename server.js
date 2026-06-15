@@ -8,21 +8,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado a MongoDB Atlas'))
   .catch(err => console.error('❌ Error:', err));
 
-// Modelo de Tarea
-const Tarea = mongoose.model('Tarea', {
-  titulo: String,
+const TareaSchema = new mongoose.Schema({
+  titulo: { type: String, required: true },
   completada: { type: Boolean, default: false },
+  categoria: { type: String, default: 'General' },
+  prioridad: { type: String, enum: ['Alta', 'Media', 'Baja'], default: 'Media' },
+  fechaLimite: { type: Date },
   fecha: { type: Date, default: Date.now }
 });
 
-// RUTAS CRUD
+const Tarea = mongoose.model('Tarea', TareaSchema);
 
-// CREATE - Crear tarea
+// CREATE
 app.post('/api/tareas', async (req, res) => {
   try {
     const tarea = new Tarea(req.body);
@@ -33,7 +34,7 @@ app.post('/api/tareas', async (req, res) => {
   }
 });
 
-// READ - Obtener todas las tareas
+// READ
 app.get('/api/tareas', async (req, res) => {
   try {
     const tareas = await Tarea.find().sort({ fecha: -1 });
@@ -43,7 +44,7 @@ app.get('/api/tareas', async (req, res) => {
   }
 });
 
-// UPDATE - Actualizar tarea
+// UPDATE
 app.put('/api/tareas/:id', async (req, res) => {
   try {
     const tarea = await Tarea.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -53,7 +54,7 @@ app.put('/api/tareas/:id', async (req, res) => {
   }
 });
 
-// DELETE - Eliminar tarea
+// DELETE
 app.delete('/api/tareas/:id', async (req, res) => {
   try {
     await Tarea.findByIdAndDelete(req.params.id);
